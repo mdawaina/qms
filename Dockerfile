@@ -35,6 +35,7 @@ RUN dotnet publish "QMS.csproj" -c Release -o /app/publish
 FROM base AS final
 WORKDIR /app
 
-copy ./QMS/wkhtmltox ./wkhtmltox
+COPY ./QMS/wkhtmltopdf ./wkhtmltopdf
+COPY ./QMS/wkhtmltox ./wkhtmltox
 COPY --from=publish /app/publish .
 ENTRYPOINT ["dotnet", "QMS.dll"]

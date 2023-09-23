@@ -10,6 +10,7 @@ using System.Reflection;
 using System.Runtime.Loader;
 using System.IO;
 using System;
+using System.Runtime.InteropServices;
 
 namespace QMS
 {
@@ -51,8 +52,29 @@ namespace QMS
             var architectureFolder = (IntPtr.Size == 8) ? "64bit" : "32bit";
             var wkHtmlToPdfBasePath = Path.Combine(_contentRootPath, "wkhtmltox", "v0.12.4", architectureFolder);
             var wkHtmlToPdfPath = Path.Combine(wkHtmlToPdfBasePath, "libwkhtmltox");
-            CustomAssemblyLoadContext context = new CustomAssemblyLoadContext();
-            context.LoadUnmanagedLibrary(wkHtmlToPdfPath);
+           
+            IntPtr nativeLibraryPtr;
+
+        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+        {
+            nativeLibraryPtr = NativeLibrary.Load(wkHtmlToPdfPath + ".dll");
+        }
+        else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+        {
+            nativeLibraryPtr = NativeLibrary.Load(wkHtmlToPdfPath + ".so");
+        }
+        else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+        {
+            nativeLibraryPtr = NativeLibrary.Load(wkHtmlToPdfPath + ".dylib");
+        }
+        else
+        {
+            throw new InvalidOperationException("Unsupported OS platform");
+        }
+        
+        CustomAssemblyLoadContext context = new CustomAssemblyLoadContext();
+        context.LoadUnmanagedLibrary(nativeLibraryPtr.ToString());
+
             services.AddSingleton(typeof(IConverter), new SynchronizedConverter(new PdfTools()));
 
             services.AddControllersWithViews();
